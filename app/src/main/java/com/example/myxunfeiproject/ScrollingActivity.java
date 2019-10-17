@@ -1,21 +1,19 @@
 package com.example.myxunfeiproject;
 
 import android.Manifest;
-import android.content.Intent;
+import android.app.Activity;
+import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
-import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
-import android.provider.Settings;
 import android.view.View;
 import android.widget.TextView;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,16 +23,8 @@ import java.util.ArrayList;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
-import permissions.dispatcher.NeedsPermission;
-import permissions.dispatcher.OnNeverAskAgain;
-import permissions.dispatcher.OnPermissionDenied;
-import permissions.dispatcher.OnShowRationale;
-import permissions.dispatcher.PermissionRequest;
-import permissions.dispatcher.RuntimePermissions;
 import util.LogUtil;
 import util.audio.AudioTrackPlayer;
-
-@RuntimePermissions
 public class ScrollingActivity extends AppCompatActivity {
     @BindView(R.id.tv_start_unspeex)
     TextView tvStartUnspeex;
@@ -53,8 +43,7 @@ public class ScrollingActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_scrolling);
         ButterKnife.bind(this);
-//        requestPermissions(this);
-        ScrollingActivityPermissionsDispatcher.getReadPermissionWithPermissionCheck(this);
+        requestPermissions(this);
         audioTrackPlayer = AudioTrackPlayer.getInstance();
         initData();
 
@@ -73,7 +62,7 @@ public class ScrollingActivity extends AppCompatActivity {
      */
     private void initData() {
         pcmData.clear();
-        String rootPath = Environment.getExternalStorageDirectory() + "/spdb_cache/test";
+        String rootPath = Environment.getExternalStorageDirectory() + "/voice";
         File file = new File(rootPath);
         if (!file.exists()) {
             file.mkdirs();
@@ -155,66 +144,32 @@ public class ScrollingActivity extends AppCompatActivity {
         }
     }
 
-    @NeedsPermission(Manifest.permission.READ_EXTERNAL_STORAGE)
-    void getReadPermission() {
-        LogUtil.errorLog(LogUtil.TAG, "--------getReadPermission---------------");
+    /**
+     * 申请权限
+     *
+     * @param activity
+     */
+    public void requestPermissions(Activity activity) {
+        try {
+            if (Build.VERSION.SDK_INT >= 23) {
+                int permission = ActivityCompat.checkSelfPermission(activity,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE);
+                if (permission != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(activity, new String[]
+                            {Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                                    Manifest.permission.LOCATION_HARDWARE, Manifest.permission.READ_PHONE_STATE,
+                                    Manifest.permission.WRITE_SETTINGS, Manifest.permission.READ_EXTERNAL_STORAGE,
+                                    Manifest.permission.RECORD_AUDIO, Manifest.permission.READ_CONTACTS}, 0x0010);
+                }
+
+                if (permission != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(activity, new String[]{
+                            Manifest.permission.ACCESS_COARSE_LOCATION,
+                            Manifest.permission.ACCESS_FINE_LOCATION}, 0x0010);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        LogUtil.errorLog(LogUtil.TAG, "--------onRequestPermissionsResult---------------" + requestCode);
-        ScrollingActivityPermissionsDispatcher.onRequestPermissionsResult(this, requestCode, grantResults);
-    }
-
-    @OnShowRationale(Manifest.permission.READ_EXTERNAL_STORAGE)
-    void showPermission(final PermissionRequest request) {
-        LogUtil.errorLog(LogUtil.TAG, "--------showPermission---------------" + request);
-        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-        intent.setData(Uri.parse("package:" + getPackageName()));
-        startActivityForResult(intent, 99);
-    }
-
-    @OnPermissionDenied(Manifest.permission.READ_EXTERNAL_STORAGE)
-    void deniedPermission() {
-        LogUtil.errorLog(LogUtil.TAG, "--------deniedPermission---------------");
-    }
-
-    @OnNeverAskAgain(Manifest.permission.READ_EXTERNAL_STORAGE)
-    void neverAskPermission() {
-        LogUtil.errorLog(LogUtil.TAG, "--------neverAskPermission---------------");
-    }
-
-
-//
-////    String decodepcmPathName = Environment.getExternalStorageDirectory() + "/spdb_cache/test/aaa_decode.pcm";
-//
-//    /**
-//     * 申请权限
-//     *
-//     * @param activity
-//     */
-//    public void requestPermissions(Activity activity) {
-//        try {
-//            if (Build.VERSION.SDK_INT >= 23) {
-//                int permission = ActivityCompat.checkSelfPermission(activity,
-//                        Manifest.permission.WRITE_EXTERNAL_STORAGE);
-//                if (permission != PackageManager.PERMISSION_GRANTED) {
-//                    ActivityCompat.requestPermissions(activity, new String[]
-//                            {Manifest.permission.WRITE_EXTERNAL_STORAGE,
-//                                    Manifest.permission.LOCATION_HARDWARE, Manifest.permission.READ_PHONE_STATE,
-//                                    Manifest.permission.WRITE_SETTINGS, Manifest.permission.READ_EXTERNAL_STORAGE,
-//                                    Manifest.permission.RECORD_AUDIO, Manifest.permission.READ_CONTACTS}, 0x0010);
-//                }
-//
-//                if (permission != PackageManager.PERMISSION_GRANTED) {
-//                    ActivityCompat.requestPermissions(activity, new String[]{
-//                            Manifest.permission.ACCESS_COARSE_LOCATION,
-//                            Manifest.permission.ACCESS_FINE_LOCATION}, 0x0010);
-//                }
-//            }
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-//    }
 }
